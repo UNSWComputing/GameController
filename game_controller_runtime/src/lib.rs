@@ -112,10 +112,15 @@ async fn start_network(
 
     let mut join_set = JoinSet::new();
 
-    let mut control_message_sender =
-        ControlMessageSender::new(broadcast_address, params, control_receiver, false)
-            .await
-            .context("could not create control message sender")?;
+    let mut control_message_sender = ControlMessageSender::new(
+        broadcast_address,
+        Some(local_address),
+        params,
+        control_receiver,
+        false,
+    )
+    .await
+    .context("could not create control message sender")?;
 
     join_set.spawn(async move { control_message_sender.run().await });
 
@@ -235,6 +240,7 @@ async fn event_loop(
                                 monitor_join_set.spawn(async move {
                                     ControlMessageSender::new(
                                         host,
+                                        None,
                                         params,
                                         receiver,
                                         true

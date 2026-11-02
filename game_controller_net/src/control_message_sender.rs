@@ -32,22 +32,27 @@ impl ControlMessageSender {
     const SEND_FAST_COUNTER: u8 = 5;
 
     /// This function creates a new sender for control messages.
+    ///
+    /// If `local_address` is given (and of the same IP version as `address`), the socket is bound to
+    /// it, so that the messages come from the address of the selected network interface. Otherwise the
+    /// operating system chooses the source address, which for a limited broadcast is the address of
+    /// whichever interface the default route uses.
     pub async fn new(
         address: IpAddr,
+        local_address: Option<IpAddr>,
         params: Params,
         game_receiver: watch::Receiver<Game>,
         to_monitor: bool,
     ) -> Result<Self> {
         Ok(Self {
             socket: {
-                let socket = UdpSocket::bind((
-                    match address {
-                        IpAddr::V4(_) => IpAddr::V4(Ipv4Addr::UNSPECIFIED),
-                        IpAddr::V6(_) => IpAddr::V6(Ipv6Addr::UNSPECIFIED),
-                    },
-                    0u16,
-                ))
-                .await?;
+                let bind_address = match (address, local_address) {
+                    (IpAddr::V4(_), Some(local @ IpAddr::V4(_))) => local,
+                    (IpAddr::V6(_), Some(local @ IpAddr::V6(_))) => local,
+                    (IpAddr::V4(_), _) => IpAddr::V4(Ipv4Addr::UNSPECIFIED),
+                    (IpAddr::V6(_), _) => IpAddr::V6(Ipv6Addr::UNSPECIFIED),
+                };
+                let socket = UdpSocket::bind((bind_address, 0u16)).await?;
                 socket.set_broadcast(true)?;
                 socket.connect((address, CONTROL_MESSAGE_PORT)).await?;
                 socket

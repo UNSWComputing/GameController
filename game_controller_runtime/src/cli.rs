@@ -53,6 +53,9 @@ pub struct Args {
     /// Ignore the file with persistent options.
     #[arg(long)]
     pub no_args_file: bool,
+    /// Accept actions as JSON datagrams on this UDP port of 127.0.0.1 (for simulators and tools).
+    #[arg(long)]
+    pub remote_port: Option<u16>,
     /// Print the locations of configuration, options file and logs and exit.
     #[arg(long)]
     pub show_paths: bool,

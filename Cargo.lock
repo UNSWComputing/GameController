@@ -1177,6 +1177,7 @@ dependencies = [
  "game_controller_net",
  "network-interface",
  "serde",
+ "serde_json",
  "serde_repr",
  "serde_with 2.3.3",
  "serde_yaml",

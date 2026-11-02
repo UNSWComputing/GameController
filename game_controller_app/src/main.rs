@@ -34,6 +34,9 @@ use handlers::get_invoke_handler;
 /// This struct is used as state to tell the handlers which configuration directory is in use.
 pub struct ConfigDirectory(pub PathBuf);
 
+/// This struct is used as state to tell the handlers on which port remote actions are accepted.
+pub struct RemotePort(pub Option<u16>);
+
 /// This function returns the real path of the executable, which is the base for finding the
 /// installed configuration (symbolic links must not confuse the search).
 fn executable_path() -> Result<PathBuf> {
@@ -142,9 +145,11 @@ fn main() {
             if let Some(warning) = stale_config_warning(&resolved) {
                 eprintln!("Warning: {warning}");
             }
+            let remote_port = args.remote_port;
             match make_launch_data(&resolved.directory, args) {
                 Ok(launch_data) => {
                     app.manage(launch_data);
+                    app.manage(RemotePort(remote_port));
                     app.manage(ConfigDirectory(resolved.directory));
                 }
                 Err(error) => {

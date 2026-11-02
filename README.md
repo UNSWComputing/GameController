@@ -268,6 +268,29 @@ The undo history is actually not limited to the last five actions, i.e. previous
 Actions that were applied automatically (e.g. because a timer elapsed) do not appear in the undo history.
 This is because they would be applied again immediately if they were undone.
 
+## Remote Actions
+
+For simulators and test tools, the GameController can accept actions from another program on the same machine instead of (or in addition to) the buttons of the UI.
+It is off unless a port is given with `--remote-port <port>`.
+
+The GameController then listens on UDP port `<port>` of `127.0.0.1` (loopback only).
+Each datagram is one action in the JSON format that the UI uses (see `frontend/src/actions.js`):
+
+```json
+{"type": "startSetPlay", "args": {"side": "home", "setPlay": "kickOff"}}
+{"type": "goal", "args": {"side": "away"}}
+{"type": "penalize", "args": {"side": "home", "player": 2, "call": "pushing"}}
+{"type": "switchHalf"}
+```
+
+Actions without arguments may omit `args`.
+The action is queued exactly like an action from the UI: it is applied only if it is legal in the current state, it is written to the log, and it can be undone.
+The sender gets one datagram back, `{"queued":true}` or `{"error":"..."}` if the request was not a valid action.
+Whether an action was legal can be seen in the control messages or in the UI.
+Remote actions are possible only after the launcher has been completed.
+
+Example (shell): `echo '{"type":"startSetPlay","args":{"side":"home","setPlay":"kickOff"}}' | nc -u -w1 127.0.0.1 47300`
+
 ## Logs
 
 The GameController writes log files to a directory in the user's data directory, so they are kept when an installation is removed or replaced:

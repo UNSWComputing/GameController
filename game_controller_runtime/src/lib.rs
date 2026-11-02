@@ -43,6 +43,7 @@ mod connection_status;
 pub mod launch;
 mod logger;
 pub mod paths;
+pub mod remote;
 
 use connection_status::{
     get_connection_status_map, get_next_connection_status_change, AlivenessTimestampMap,
@@ -335,6 +336,7 @@ pub async fn start_runtime(
     teams: &[Team],
     network_interfaces: &[NetworkInterface],
     send_ui_state: Box<dyn Fn(UiState) -> Result<()> + Send>,
+    remote_port: Option<u16>,
 ) -> Result<RuntimeState> {
     let mut runtime_join_set = JoinSet::new();
 
@@ -452,7 +454,7 @@ pub async fn start_runtime(
         .find(|network_interface| network_interface.id == settings.network.interface)
         .unwrap();
 
-    let (event_receiver, control_sender, network_join_set) = {
+    let (event_receiver, control_sender, mut network_join_set) = {
         let game = game_controller.get_game(true).clone();
         let params = game_controller.params.clone();
         start_network(
@@ -477,6 +479,11 @@ pub async fn start_runtime(
     };
 
     let (action_sender, action_receiver) = mpsc::unbounded_channel();
+    if let Some(port) = remote_port {
+        let remote_action_receiver =
+            remote::RemoteActionReceiver::new(port, action_sender.clone()).await?;
+        network_join_set.spawn(remote_action_receiver.run());
+    }
     let (subscribed_actions_sender, subscribed_actions_receiver) = watch::channel(vec![]);
     let ui_notify = Arc::new(Notify::new());
     let shutdown_token = CancellationToken::new();

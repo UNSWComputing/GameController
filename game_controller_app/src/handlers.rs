@@ -16,7 +16,7 @@ use game_controller_runtime::{
     start_runtime, RuntimeState,
 };
 
-use crate::{show_fatal_error, ConfigDirectory};
+use crate::{show_fatal_error, ConfigDirectory, RemotePort};
 
 /// This struct is used as state so that the [launch] function can communicate to
 /// [sync_with_backend] that the full [RuntimeState] is managed now.
@@ -57,6 +57,7 @@ async fn launch(settings: LaunchSettings, window: WebviewWindow, app: AppHandle)
 
     let launch_data = app.state::<LaunchData>();
     let config_directory = app.state::<ConfigDirectory>();
+    let remote_port = app.state::<RemotePort>().0;
     match async {
         // The logs are kept in a per-user directory, so that they survive removing or replacing
         // the installation, and all installations write to the same place.
@@ -69,6 +70,7 @@ async fn launch(settings: LaunchSettings, window: WebviewWindow, app: AppHandle)
             &launch_data.teams,
             &launch_data.network_interfaces,
             Box::new(send_ui_state),
+            remote_port,
         )
         .await
         .context("could not start runtime")

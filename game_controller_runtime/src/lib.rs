@@ -487,7 +487,8 @@ pub async fn start_runtime(
     let (action_sender, action_receiver) = mpsc::unbounded_channel();
     if let Some(port) = remote_port {
         let remote_action_receiver =
-            remote::RemoteActionReceiver::new(port, action_sender.clone()).await?;
+            remote::RemoteActionReceiver::new(port, action_sender.clone(), params.game.clone())
+                .await?;
         network_join_set.spawn(remote_action_receiver.run());
     }
     let (subscribed_actions_sender, subscribed_actions_receiver) = watch::channel(vec![]);

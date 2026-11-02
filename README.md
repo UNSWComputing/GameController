@@ -286,6 +286,8 @@ Each datagram is one action in the JSON format that the UI uses (see `frontend/s
 ```
 
 Actions without arguments may omit `args`.
+Wherever an action names a `side`, `"team": <number>` may be given instead, with the number of one of the two playing teams, e.g. `{"type": "penalize", "args": {"team": 18, "player": 2, "call": "pushing"}}`.
+The GameController looks up the side, so the sender does not need to know which team the launcher put on which side.
 The action is queued exactly like an action from the UI: it is applied only if it is legal in the current state, it is written to the log, and it can be undone.
 The sender gets one datagram back, `{"queued":true}` or `{"error":"..."}` if the request was not a valid action.
 Whether an action was legal can be seen in the control messages or in the UI.

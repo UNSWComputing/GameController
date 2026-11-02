@@ -293,6 +293,10 @@ The sender gets one datagram back, `{"queued":true}` or `{"error":"..."}` if the
 Whether an action was legal can be seen in the control messages or in the UI.
 Remote actions are possible only after the launcher has been completed.
 
+`{"type": "newGame"}` starts the game over, for tools that play many games in one run: the state is back to initial in the first half with no goals, no penalties, the full clock and the full budgets, and the undo history is dropped.
+The teams, the sides and the kick-off side stay those of the launcher.
+It is always legal, it can be sent from any state, and it has no button in the UI.
+
 Example (shell): `echo '{"type":"startSetPlay","args":{"side":"home","setPlay":"kickOff"}}' | nc -u -w1 127.0.0.1 47300`
 
 ## Logs

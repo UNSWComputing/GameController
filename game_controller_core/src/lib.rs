@@ -40,52 +40,58 @@ pub struct GameController {
     logger: Box<dyn Logger + Send>,
 }
 
+/// This function returns the game state at the beginning of a game with the given parameters: state
+/// initial, first half, no goals, no penalties, full clock and budgets. [actions::NewGame] returns to it.
+pub fn initial_game(params: &Params) -> Game {
+    Game {
+        sides: params.game.side_mapping,
+        stopped: false,
+        phase: Phase::FirstHalf,
+        state: State::Initial,
+        set_play: SetPlay::NoSetPlay,
+        kicking_side: Some(params.game.kick_off_side),
+        primary_timer: Timer::Started {
+            remaining: params.competition.half_duration.try_into().unwrap(),
+            run_condition: RunCondition::MainTimer,
+            behavior_at_zero: BehaviorAtZero::Overflow,
+        },
+        secondary_timer: Timer::Stopped,
+        timeout_rewind_timer: Timer::Stopped,
+        switch_half_timer: Timer::Stopped,
+        teams: EnumMap::from_fn(|_| Team {
+            goalkeeper: Some(PlayerNumber::new(1)),
+            score: 0,
+            penalty_counter: 0,
+            timeout_budget: params.competition.timeouts_per_team,
+            message_budget: params.competition.messages_per_team,
+            illegal_communication: false,
+            penalty_shot: 0,
+            penalty_shot_mask: 0,
+            players: PlayerNumber::all()
+                .map(|player| Player {
+                    // By default, the higher-numbered players are substitutes.
+                    penalty: if u8::from(player) <= params.competition.players_per_team {
+                        Penalty::NoPenalty
+                    } else {
+                        Penalty::Substitute
+                    },
+                    penalty_duration: Duration::ZERO,
+                    penalty_timer: Timer::Stopped,
+                    cautions: 0,
+                })
+                // We have to collect into a Vec first because this thing cannot be directly
+                // collected into a fixed size array.
+                .collect::<Vec<_>>()
+                .try_into()
+                .unwrap(),
+        }),
+    }
+}
+
 impl GameController {
     /// This function creates a new instance with given parameters and a logger.
     pub fn new(params: Params, logger: Box<dyn Logger + Send>) -> Self {
-        let game = Game {
-            sides: params.game.side_mapping,
-            stopped: false,
-            phase: Phase::FirstHalf,
-            state: State::Initial,
-            set_play: SetPlay::NoSetPlay,
-            kicking_side: Some(params.game.kick_off_side),
-            primary_timer: Timer::Started {
-                remaining: params.competition.half_duration.try_into().unwrap(),
-                run_condition: RunCondition::MainTimer,
-                behavior_at_zero: BehaviorAtZero::Overflow,
-            },
-            secondary_timer: Timer::Stopped,
-            timeout_rewind_timer: Timer::Stopped,
-            switch_half_timer: Timer::Stopped,
-            teams: EnumMap::from_fn(|_| Team {
-                goalkeeper: Some(PlayerNumber::new(1)),
-                score: 0,
-                penalty_counter: 0,
-                timeout_budget: params.competition.timeouts_per_team,
-                message_budget: params.competition.messages_per_team,
-                illegal_communication: false,
-                penalty_shot: 0,
-                penalty_shot_mask: 0,
-                players: PlayerNumber::all()
-                    .map(|player| Player {
-                        // By default, the higher-numbered players are substitutes.
-                        penalty: if u8::from(player) <= params.competition.players_per_team {
-                            Penalty::NoPenalty
-                        } else {
-                            Penalty::Substitute
-                        },
-                        penalty_duration: Duration::ZERO,
-                        penalty_timer: Timer::Stopped,
-                        cautions: 0,
-                    })
-                    // We have to collect into a Vec first because this thing cannot be directly
-                    // collected into a fixed size array.
-                    .collect::<Vec<_>>()
-                    .try_into()
-                    .unwrap(),
-            }),
-        };
+        let game = initial_game(&params);
         Self {
             params,
             game,

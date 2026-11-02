@@ -180,6 +180,14 @@ mod tests {
     }
 
     #[test]
+    fn new_game_needs_no_arguments() {
+        assert_eq!(
+            parse_request_g(br#"{"type":"newGame"}"#),
+            Ok(VAction::NewGame(game_controller_core::actions::NewGame))
+        );
+    }
+
+    #[test]
     fn parses_the_actions_of_the_ui() {
         assert_eq!(
             parse_request_g(

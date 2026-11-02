@@ -36,6 +36,7 @@ trait_enum! {
         FreeSetPlay,
         GlobalGameStuck,
         Goal,
+        NewGame,
         Penalize,
         SelectGoalkeeper,
         SelectPenaltyShotPlayer,
@@ -140,6 +141,21 @@ impl ActionContext<'_> {
                 *self.game = entry.0;
                 self.game.stopped = stopped;
             }
+        }
+    }
+
+    /// This function drops the undo history. (Only [crate::actions::NewGame] needs it.)
+    pub fn clear_history(&mut self) {
+        if let Some(history) = self.history.as_mut() {
+            history.clear();
+        }
+    }
+
+    /// This function drops the delayed game state, if there is one. (Only [crate::actions::NewGame]
+    /// needs it.)
+    pub fn cancel_delay(&mut self) {
+        if let Some(delay) = self.delay.as_mut() {
+            **delay = None;
         }
     }
 
